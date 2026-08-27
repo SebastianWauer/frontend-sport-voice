@@ -99,8 +99,9 @@ jobs:
             exit 1
           fi
 
+          KUNDE_NAME=$(jq -r '.customer.name' /tmp/ziel.json)
           {
-            echo "KUNDE_NAME=$(jq -r '.customer.name' /tmp/ziel.json)"
+            echo "KUNDE_NAME=$KUNDE_NAME"
             echo "SSH_HOST=$(jq -r '.ssh.host' /tmp/ziel.json)"
             echo "SSH_PORT=$(jq -r '.ssh.port' /tmp/ziel.json)"
             echo "SSH_USER=$(jq -r '.ssh.user' /tmp/ziel.json)"
