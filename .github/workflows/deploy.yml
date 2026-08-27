@@ -12,11 +12,6 @@ on:
         description: "Optionale Kunden-ID; leer = anhand des Repositories ermitteln"
         required: false
         type: string
-      erstinstallation:
-        description: ".env anlegen, falls noch keine vorhanden ist"
-        type: boolean
-        default: false
-
 concurrency:
   group: deploy-frontend-${{ github.repository }}
   cancel-in-progress: false
@@ -77,7 +72,7 @@ jobs:
             exit 1
           fi
 
-          for pfad in .ssh.password .tokens.health; do
+          for pfad in .ssh.password .tokens.health .tokens.api; do
             wert=$(jq -r "$pfad // empty" /tmp/ziel.json)
             [ -n "$wert" ] && echo "::add-mask::$wert"
           done
@@ -189,25 +184,40 @@ jobs:
             --exclude=.env --exclude=storage/ "${EXTRA_EXCLUDE[@]}" \
             -e "$SSH_CMD" "$STAGE/" "$SSH_USER@$SSH_HOST:$FRONTEND_PATH/"
 
-      - name: Frontend-.env anlegen
-        if: ${{ inputs.erstinstallation }}
+      - name: Frontend-.env aus der Verwaltung synchronisieren
         run: |
           set -euo pipefail
-          jq -r '
-            "CMS_API_URL=" + .urls.cms + "/api.php/api/v1",
-            "CMS_API_TOKEN=",
-            "CMS_TIMEOUT=5",
-            "CMS_CACHE_TTL=300",
-            "FRONTEND_BASE_URL=" + .urls.frontend,
-            "CMS_SITEMAP_URL=" + .urls.cms + "/sitemap.xml"
-          ' /tmp/ziel.json > /tmp/frontend.env
+          php .github/scripts/render-env.php frontend /tmp/ziel.json > /tmp/frontend.env
 
-          if $SSH_CMD "$SSH_USER@$SSH_HOST" "test -f '$FRONTEND_PATH/.env'"; then
-            echo "Frontend-.env existiert bereits und bleibt unveraendert."
-          else
-            $SSH_CMD "$SSH_USER@$SSH_HOST" "cat > '$FRONTEND_PATH/.env' && chmod 600 '$FRONTEND_PATH/.env'" < /tmp/frontend.env
-          fi
+          ziel="$SSH_USER@$SSH_HOST"
+          $SSH_CMD "$ziel" "if test -f '$FRONTEND_PATH/.env'; then cat '$FRONTEND_PATH/.env'; fi" > /tmp/frontend-current.env
+          awk -F= '
+            NR == FNR {
+              key = $1
+              if (!(key in managed)) order[++count] = key
+              managed[key] = $0
+              next
+            }
+            {
+              key = $1
+              if (key in managed) {
+                if (!(key in written)) print managed[key]
+                written[key] = 1
+                next
+              }
+              print
+            }
+            END {
+              for (i = 1; i <= count; i++) {
+                key = order[i]
+                if (!(key in written)) print managed[key]
+              }
+            }
+          ' /tmp/frontend.env /tmp/frontend-current.env > /tmp/frontend-merged.env
+
+          $SSH_CMD "$ziel" "cat > '$FRONTEND_PATH/.env.new' && chmod 600 '$FRONTEND_PATH/.env.new' && mv '$FRONTEND_PATH/.env.new' '$FRONTEND_PATH/.env'" < /tmp/frontend-merged.env
           $SSH_CMD "$SSH_USER@$SSH_HOST" "mkdir -p '$FRONTEND_PATH/storage' && chmod 755 '$FRONTEND_PATH/storage'"
+          echo "Frontend-.env aus der Verwaltung synchronisiert; eigene Zusatzwerte wurden erhalten."
 
       - name: CMS und Frontend pruefen
         env:
