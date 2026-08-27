@@ -4,11 +4,13 @@ name: Deploy to IONOS
 # Ziel; frontend.json, Kunden-Key, Repository und Ref muessen uebereinstimmen.
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       kunde:
-        description: "Kunden-ID aus der Verwaltung"
-        required: true
+        description: "Optionale Kunden-ID; leer = anhand des Repositories ermitteln"
+        required: false
         type: string
       erstinstallation:
         description: ".env anlegen, falls noch keine vorhanden ist"
@@ -16,7 +18,7 @@ on:
         default: false
 
 concurrency:
-  group: deploy-frontend-${{ inputs.kunde }}
+  group: deploy-frontend-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
@@ -36,9 +38,39 @@ jobs:
           jq -e '.id | type == "string" and length > 0' frontend.json >/dev/null
           FRONTEND_KEY=$(jq -r '.id' frontend.json)
 
+          KUNDE_ID="${{ inputs.kunde }}"
+          if [ -z "$KUNDE_ID" ]; then
+            STATUS=$(curl -sS --max-time 30 -o /tmp/instanzen.json -w '%{http_code}' \
+              -H "X-Ci-Token: $CI_TOKEN" \
+              "${VERWALTUNG_URL%/}/api/ci/instances")
+            if [ "$STATUS" != "200" ]; then
+              echo "::error::Instanzliste konnte nicht geladen werden, HTTP $STATUS."
+              exit 1
+            fi
+
+            TREFFER=()
+            while read -r CANDIDATE; do
+              [ -n "$CANDIDATE" ] || continue
+              CANDIDATE_STATUS=$(curl -sS --max-time 30 -o "/tmp/kandidat-$CANDIDATE.json" -w '%{http_code}' \
+                -H "X-Ci-Token: $CI_TOKEN" \
+                "${VERWALTUNG_URL%/}/api/ci/deploy-target?customer=$CANDIDATE")
+              if [ "$CANDIDATE_STATUS" = "200" ] \
+                && [ "$(jq -r '.frontend.repository // ""' "/tmp/kandidat-$CANDIDATE.json")" = "$GITHUB_REPOSITORY" ]; then
+                TREFFER+=("$CANDIDATE")
+              fi
+            done < <(jq -r '.instances[].customer' /tmp/instanzen.json)
+
+            if [ "${#TREFFER[@]}" -ne 1 ]; then
+              echo "::error::Repository-Zuordnung ist nicht eindeutig; gefunden: ${#TREFFER[@]}."
+              exit 1
+            fi
+            KUNDE_ID="${TREFFER[0]}"
+          fi
+
+          echo "KUNDE_ID=$KUNDE_ID" >> "$GITHUB_ENV"
           STATUS=$(curl -sS --max-time 30 -o /tmp/ziel.json -w '%{http_code}' \
             -H "X-Ci-Token: $CI_TOKEN" \
-            "${VERWALTUNG_URL%/}/api/ci/deploy-target?customer=${{ inputs.kunde }}")
+            "${VERWALTUNG_URL%/}/api/ci/deploy-target?customer=$KUNDE_ID")
           if [ "$STATUS" != "200" ]; then
             echo "::error::Verwaltung antwortete mit HTTP $STATUS"
             cat /tmp/ziel.json || true
@@ -199,7 +231,7 @@ jobs:
           FRONTEND_HTTP=$((10#${FRONTEND_HTTP:-0}))
 
           jq -n \
-            --arg kunde "${{ inputs.kunde }}" \
+            --arg kunde "$KUNDE_ID" \
             --arg cms_url "$CMS_HEALTH_URL" \
             --arg frontend_url "$FRONTEND_URL" \
             --argjson cms_http "$CMS_HTTP" \
