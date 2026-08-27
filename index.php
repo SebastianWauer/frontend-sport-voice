@@ -35,11 +35,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/app/CmsApiClient.php';
 require_once __DIR__ . '/app/view.php';
-$sharedLogger = dirname(__DIR__) . '/shared/FileLogger.php';
 $localLogger  = __DIR__ . '/app/FileLogger.php';
-if (is_file($sharedLogger)) {
-    require_once $sharedLogger;
-} elseif (is_file($localLogger)) {
+if (is_file($localLogger)) {
     require_once $localLogger;
 } else {
     // Minimal no-op fallback so the site doesn't crash without a logger
@@ -1154,6 +1151,5 @@ try {
 } catch (Throwable) {
     render500($siteName);
 }
-
 
 
