@@ -123,7 +123,8 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
           mkdir -p "$HOME/.ssh"
           ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null
-          echo "SSH_CMD=sshpass -e ssh -p $SSH_PORT" >> "$GITHUB_ENV"
+          SSH_CMD="sshpass -e ssh -p $SSH_PORT"
+          echo "SSH_CMD=$SSH_CMD" >> "$GITHUB_ENV"
 
           for feld in SSH_HOST SSH_USER SSHPASS FRONTEND_PATH CMS_URL FRONTEND_URL; do
             if [ -z "${!feld:-}" ]; then
