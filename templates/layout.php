@@ -7,6 +7,8 @@
     $client = $client ?? null; // nicht jeder Render-Pfad reicht ihn durch (z.B. Fehlerseiten)
     $brandVersion = @filemtime(__DIR__ . '/../assets/css/brand.php') ?: time();
     $themeVersion = @filemtime(__DIR__ . '/../assets/css/theme.css') ?: time();
+    $sportVoiceVersion = @filemtime(__DIR__ . '/../assets/css/sport-voice.css') ?: time();
+    $sportVoiceJsVersion = @filemtime(__DIR__ . '/../assets/js/sport-voice.js') ?: time();
     $assetBaseUrl = (isset($assetBaseUrl) && is_string($assetBaseUrl)) ? rtrim($assetBaseUrl, '/') : '';
     $faviconUrl = (isset($faviconUrl) && is_string($faviconUrl)) ? trim($faviconUrl) : '';
     $previewMainOnly = !empty($previewMainOnly);
@@ -14,10 +16,14 @@
     $contactTurnstileSiteKey = (isset($contactTurnstileSiteKey) && is_string($contactTurnstileSiteKey)) ? trim($contactTurnstileSiteKey) : '';
     $publicSettings = is_array($publicSettings ?? null) ? $publicSettings : [];
     $themeCssHref = ($assetBaseUrl !== '' ? $assetBaseUrl : '') . '/assets/css/theme.css?v=' . (int)$themeVersion;
+    $sportVoiceCssHref = ($assetBaseUrl !== '' ? $assetBaseUrl : '') . '/assets/css/sport-voice.css?v=' . (int)$sportVoiceVersion;
+    $sportVoiceJsHref = ($assetBaseUrl !== '' ? $assetBaseUrl : '') . '/assets/js/sport-voice.js?v=' . (int)$sportVoiceJsVersion;
     $brandCssHref = ($assetBaseUrl !== '' ? $assetBaseUrl : '') . '/assets/css/brand.php?v=' . (int)$brandVersion;
     $faviconFallbackUrl = ($assetBaseUrl !== '' ? $assetBaseUrl : '') . '/favicon.ico';
     ?>
+    <link rel="preload" href="<?= htmlspecialchars(($assetBaseUrl !== '' ? $assetBaseUrl : '') . '/assets/sport-voice/montserrat-800.woff', ENT_QUOTES, 'UTF-8') ?>" as="font" type="font/woff" crossorigin>
     <link rel="stylesheet" href="<?= htmlspecialchars($themeCssHref, ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars($sportVoiceCssHref, ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars($brandCssHref, ENT_QUOTES, 'UTF-8') ?>">
     <?php if ($faviconUrl !== ''): ?>
     <link rel="icon" href="<?= htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8') ?>">
@@ -59,6 +65,7 @@
     <?php if ($ogImage !== ''): ?>
     <meta property="og:image" content="<?= htmlspecialchars($ogImage, ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
+    <script src="<?= htmlspecialchars($sportVoiceJsHref, ENT_QUOTES, 'UTF-8') ?>" defer></script>
 </head>
 <body>
     <?php
@@ -73,10 +80,10 @@
     }
     ?>
     
-    <main>
+    <main id="main">
         <?php render('templates/page.php', compact('pageTitle', 'pageSubtitle', 'blocks', 'contactFormStates', 'slug', 'contactTurnstileSiteKey', 'publicSettings', 'client')); ?>
     </main>
     
-    <?php if (!$previewMainOnly) { render('templates/partials/footer.php', compact('siteName', 'footerNavItems')); } ?>
+    <?php if (!$previewMainOnly) { render('templates/partials/footer.php', compact('siteName', 'footerNavItems', 'assetBaseUrl')); } ?>
 </body>
 </html>

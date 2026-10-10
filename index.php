@@ -857,7 +857,7 @@ function enrichEventBlocksWithItems(array $blocks, CmsApiClient $client, string 
             if ($limit <= 0) $limit = 50;
             if ($limit > 500) $limit = 500;
         }
-        $includePast = true;
+        $includePast = ((string)($value['include_past'] ?? '1') !== '0');
         $cacheKey = strtolower(implode(',', $categoryList)) . '|' . $limit . '|' . ($includePast ? '1' : '0');
 
         if (!array_key_exists($cacheKey, $cache)) {
