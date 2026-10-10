@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/../app/block_content.php'; ?>
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -11,7 +12,26 @@
     $sportVoiceJsVersion = @filemtime(__DIR__ . '/../assets/js/sport-voice.js') ?: time();
     $assetBaseUrl = (isset($assetBaseUrl) && is_string($assetBaseUrl)) ? rtrim($assetBaseUrl, '/') : '';
     $faviconUrl = (isset($faviconUrl) && is_string($faviconUrl)) ? trim($faviconUrl) : '';
+    $headerLogoUrl = (isset($headerLogoUrl) && is_string($headerLogoUrl)) ? trim($headerLogoUrl) : '';
     $previewMainOnly = !empty($previewMainOnly);
+    $usesEditorialBlocks = false;
+    $needsLegacyStyles = false;
+    foreach (is_array($blocks ?? null) ? $blocks : [] as $candidate) {
+        if (!is_array($candidate)) continue;
+        $candidateType = block_render_type((string)($candidate['type'] ?? ''));
+        $payload = array_merge($candidate, is_array($candidate['data'] ?? null) ? $candidate['data'] : []);
+        $layout = (string)($payload['layout'] ?? '');
+        $modernLayout = match ($candidateType) {
+            'hero' => 'cover', 'service_showcase' => 'list', 'columns', 'gallery' => 'editorial',
+            'text' => 'portrait', 'contact_form' => 'split', default => null
+        };
+        if (in_array($candidateType, ['logo_strip','references'], true) || ($modernLayout !== null && $layout === $modernLayout)) {
+            $usesEditorialBlocks = true;
+            if ($candidateType === 'contact_form' && ($payload['delivery'] ?? 'server') === 'server') $needsLegacyStyles = true;
+        } elseif ($candidateType !== 'events') {
+            $needsLegacyStyles = true;
+        }
+    }
     $contactFormStates = is_array($contactFormStates ?? null) ? $contactFormStates : [];
     $contactTurnstileSiteKey = (isset($contactTurnstileSiteKey) && is_string($contactTurnstileSiteKey)) ? trim($contactTurnstileSiteKey) : '';
     $publicSettings = is_array($publicSettings ?? null) ? $publicSettings : [];
@@ -22,7 +42,9 @@
     $faviconFallbackUrl = ($assetBaseUrl !== '' ? $assetBaseUrl : '') . '/favicon.ico';
     ?>
     <link rel="preload" href="<?= htmlspecialchars(($assetBaseUrl !== '' ? $assetBaseUrl : '') . '/assets/sport-voice/montserrat-800.woff', ENT_QUOTES, 'UTF-8') ?>" as="font" type="font/woff" crossorigin>
+    <?php if (!$usesEditorialBlocks || $needsLegacyStyles): ?>
     <link rel="stylesheet" href="<?= htmlspecialchars($themeCssHref, ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
     <link rel="stylesheet" href="<?= htmlspecialchars($sportVoiceCssHref, ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars($brandCssHref, ENT_QUOTES, 'UTF-8') ?>">
     <?php if ($faviconUrl !== ''): ?>
@@ -67,7 +89,7 @@
     <?php endif; ?>
     <script src="<?= htmlspecialchars($sportVoiceJsHref, ENT_QUOTES, 'UTF-8') ?>" defer></script>
 </head>
-<body>
+<body class="sport-voice-page">
     <?php
     $headerNavItems = array_values(array_filter($navItems ?? [], static function (array $item): bool {
         return (string)($item['area'] ?? 'header') !== 'footer';
@@ -76,14 +98,19 @@
         return (string)($item['area'] ?? '') === 'footer';
     }));
     if (!$previewMainOnly) {
-        render('templates/partials/header.php', compact('siteName', 'headerNavItems', 'slug', 'headerLogoUrl', 'faviconUrl', 'assetBaseUrl'));
+        render('templates/partials/header.php', compact('siteName', 'headerNavItems', 'slug', 'headerLogoUrl', 'faviconUrl', 'assetBaseUrl', 'blocks'));
     }
     ?>
     
     <main id="main">
-        <?php render('templates/page.php', compact('pageTitle', 'pageSubtitle', 'blocks', 'contactFormStates', 'slug', 'contactTurnstileSiteKey', 'publicSettings', 'client')); ?>
+        <?php render('templates/page.php', compact('pageTitle', 'pageSubtitle', 'blocks', 'contactFormStates', 'slug', 'contactTurnstileSiteKey', 'publicSettings', 'client', 'assetBaseUrl')); ?>
     </main>
     
     <?php if (!$previewMainOnly) { render('templates/partials/footer.php', compact('siteName', 'footerNavItems', 'assetBaseUrl')); } ?>
+    <dialog id="photo-dialog" class="photo-dialog" aria-labelledby="photo-caption">
+        <button class="dialog-close" type="button" aria-label="Foto schliessen">&times;</button>
+        <img id="dialog-image" alt="">
+        <p id="photo-caption"></p>
+    </dialog>
 </body>
 </html>

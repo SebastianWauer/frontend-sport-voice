@@ -1,7 +1,13 @@
 <?php
+require_once __DIR__ . '/../../../app/block_content.php';
+$block = block_content($block ?? [], $data ?? null);
+if (block_value($block, 'layout') === 'editorial') {
+    require __DIR__ . '/columns_editorial.php';
+    return;
+}
 /** @var array $block */
 $colCount = (int)($block['col_count'] ?? 2);
-if ($colCount < 1 || $colCount > 5) $colCount = 2;
+if ($colCount < 1 || $colCount > 6) $colCount = 2;
 $blockTitle = trim((string)($block['title'] ?? ''));
 
 $cols = [];

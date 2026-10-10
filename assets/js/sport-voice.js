@@ -3,7 +3,7 @@
 // These functions are kept independent of the UI so the inquiry flow can be checked.
 function buildInquiry(values) {
   const clean = key => String(values[key] || '').trim();
-  return [
+  const lines = [
     'Hallo Sebastian,', '',
     'ich möchte ein Projekt mit Sport Voice besprechen.', '',
     'Leistung: ' + clean('service'),
@@ -11,12 +11,15 @@ function buildInquiry(values) {
     'Zeitraum: ' + (clean('date') || 'noch offen'), '',
     'Weitere Details:', clean('message') || 'Details besprechen wir gerne gemeinsam.', '',
     'Viele Grüße', clean('name')
-  ].join('\n');
+  ];
+  if (clean('email')) lines.push('', 'E-Mail: ' + clean('email'));
+  if (clean('phone')) lines.push('Telefon: ' + clean('phone'));
+  return lines.join('\n');
 }
-function buildMailto(values) {
+function buildMailto(values, recipient = 'info@sport-voice.de') {
   const event = String(values.event || '').trim();
   const subject = 'Sport Voice – ' + String(values.service || 'Projektanfrage') + (event ? ': ' + event : '');
-  return 'mailto:info@sport-voice.de?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(buildInquiry(values));
+  return 'mailto:' + encodeURIComponent(recipient) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(buildInquiry(values));
 }
 
 const menuButton = document.querySelector('.menu-toggle');
@@ -43,12 +46,14 @@ if (menuButton && mobileNav) {
 
 document.querySelectorAll('.filter-button').forEach(button => {
   button.addEventListener('click', () => {
-    document.querySelectorAll('.filter-button').forEach(item => {
+    const section = button.closest('.work');
+    if (!section) return;
+    section.querySelectorAll('.filter-button').forEach(item => {
       const selected = item === button;
       item.classList.toggle('active', selected);
       item.setAttribute('aria-pressed', String(selected));
     });
-    document.querySelectorAll('.reference-row').forEach(row => {
+    section.querySelectorAll('.reference-row').forEach(row => {
       row.hidden = button.dataset.filter !== 'all' && row.dataset.category !== button.dataset.filter;
     });
   });
@@ -56,8 +61,8 @@ document.querySelectorAll('.filter-button').forEach(button => {
 
 document.querySelectorAll('.reference-logo').forEach(link => {
   link.addEventListener('click', () => {
-    const reference = document.querySelector(link.hash);
-    if (reference?.hidden) document.querySelector('.filter-button[data-filter="all"]').click();
+    const reference = link.hash ? document.getElementById(decodeURIComponent(link.hash.slice(1))) : null;
+    if (reference?.hidden) reference.closest('.work')?.querySelector('.filter-button[data-filter="all"]')?.click();
   });
 });
 
@@ -66,7 +71,7 @@ function showDialog(dialog) {
   document.body.classList.add('modal-open');
 }
 document.querySelectorAll('dialog').forEach(dialog => {
-  dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
+  dialog.querySelector('.dialog-close')?.addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => document.body.classList.remove('modal-open'));
   dialog.addEventListener('click', event => {
     if (event.target !== dialog) return;
@@ -87,17 +92,18 @@ document.querySelectorAll('[data-image]').forEach(button => {
   });
 });
 
-const form = document.getElementById('inquiry-form');
-const status = document.getElementById('form-status');
-if (form && status) {
+document.querySelectorAll('.inquiry-form[data-delivery="mailto"]').forEach(form => {
+  const status = form.querySelector('.form-status');
+  if (!status) return;
+  const recipient = form.dataset.recipient || 'info@sport-voice.de';
   const getValues = () => Object.fromEntries(new FormData(form));
   form.addEventListener('submit', event => {
     event.preventDefault();
     if (!form.reportValidity()) return;
-    window.location.href = buildMailto(getValues());
-    status.textContent = 'Die E-Mail-App wird geöffnet. Falls sie nicht startet, kopiere den Anfragetext und sende ihn an info@sport-voice.de.';
+    window.location.href = buildMailto(getValues(), recipient);
+    status.textContent = 'Die E-Mail-App wird geöffnet. Falls sie nicht startet, kopiere den Anfragetext und sende ihn an ' + recipient + '.';
   });
-  const copyButton = document.getElementById('copy-inquiry');
+  const copyButton = form.querySelector('.copy-button');
   if (copyButton) copyButton.addEventListener('click', async () => {
     if (!form.reportValidity()) return;
     const draft = buildInquiry(getValues());
@@ -110,12 +116,12 @@ if (form && status) {
         const copied = document.execCommand('copy'); area.remove();
         if (!copied) throw new Error('Clipboard unavailable');
       }
-      status.textContent = 'Anfragetext kopiert. Füge ihn in eine E-Mail an info@sport-voice.de ein.';
+      status.textContent = 'Anfragetext kopiert. Füge ihn in eine E-Mail an ' + recipient + ' ein.';
     } catch (_) {
       status.textContent = 'Kopieren ist in diesem Browser nicht möglich. Nutze „Anfrage in E-Mail öffnen“ oder schreibe direkt an info@sport-voice.de.';
     }
   });
-}
+});
 const year = document.getElementById('year');
 if (year) year.textContent = new Date().getFullYear();
 
@@ -131,5 +137,5 @@ if ('IntersectionObserver' in window) {
       });
     });
   }, {rootMargin: '-15% 0px -65% 0px', threshold: 0});
-  document.querySelectorAll('#leistungen, #einsaetze, #referenzen, #sebastian, #kontakt').forEach(section => observer.observe(section));
+  document.querySelectorAll('main section[id]').forEach(section => observer.observe(section));
 }

@@ -91,7 +91,7 @@ if ($headline === '' && $intro === '' && $events === []) {
     return;
 }
 ?>
-<section class="block block-events season section" id="einsaetze">
+<section class="block block-events season section" id="events">
   <div class="shell">
     <div class="section-heading">
       <div>

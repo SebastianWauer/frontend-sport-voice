@@ -1,4 +1,10 @@
 <?php
+require_once __DIR__ . '/../../../app/block_content.php';
+$block = block_content($block ?? [], $data ?? null);
+if (block_value($block, 'layout') === 'editorial') {
+    require __DIR__ . '/gallery_editorial.php';
+    return;
+}
 /** @var array $block */
 $raw   = (string)($block['items_json'] ?? '[]');
 $items = json_decode($raw, true);

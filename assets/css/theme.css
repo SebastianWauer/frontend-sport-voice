@@ -2278,6 +2278,9 @@ nav a[aria-current="page"] .site-nav__active-icon-wrap {
   .block-columns-5 .block-columns__grid {
     grid-template-columns: repeat(5, 1fr);
   }
+  .block-columns-6 .block-columns__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 
   /* Gallery */
   .block-gallery-2 .gallery-grid {

@@ -841,7 +841,7 @@ function enrichEventBlocksWithItems(array $blocks, CmsApiClient $client, string 
             }
         }
 
-        if ((string)($value['type'] ?? '') !== 'events') {
+        if (!in_array((string)($value['type'] ?? ''), ['events', 'sport_voice_events'], true)) {
             return $value;
         }
 

@@ -1,5 +1,11 @@
 ﻿<?php
 /** @var array $block */
+require_once __DIR__ . '/../../../app/block_content.php';
+$contactPayload = block_content($block ?? [], $data ?? null);
+if (block_value($contactPayload, 'layout') === 'split' || block_value($contactPayload, 'delivery') === 'mailto') {
+    require __DIR__ . '/contact_split.php';
+    return;
+}
 /** @var array $data */
 /** @var array $contactFormStates */
 /** @var string $currentSlug */

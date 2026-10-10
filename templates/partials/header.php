@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../app/block_content.php';
 $assetBaseUrl = isset($assetBaseUrl) && is_string($assetBaseUrl) ? rtrim($assetBaseUrl, '/') : '';
 $logoUrl = trim((string)($headerLogoUrl ?? ''));
 if ($logoUrl === '') {
@@ -19,10 +20,31 @@ foreach ($items as $item) {
     if (str_starts_with($url, '//') || preg_match('#^https?://#i', $url) === 1) {
         continue;
     }
-    if ($url === '' || $url[0] !== '/') {
+    if ($url === '' || ($url[0] !== '/' && $url[0] !== '#')) {
         $url = '/' . ltrim($url, '/');
     }
     $links[] = ['label' => $label, 'url' => $url];
+}
+$sectionLinks = [
+    'service_showcase' => 'Leistungen', 'columns' => 'Einsätze',
+    'events' => 'Events', 'references' => 'Referenzen', 'text' => 'Sebastian',
+];
+$templateLinks = [];
+foreach (is_array($blocks ?? null) ? $blocks : [] as $pageBlock) {
+    if (!is_array($pageBlock)) continue;
+    $type = block_render_type((string)($pageBlock['type'] ?? ''));
+    if (!isset($sectionLinks[$type])) continue;
+    $payload = array_merge($pageBlock, is_array($pageBlock['data'] ?? null) ? $pageBlock['data'] : []);
+    $anchor = (string)($payload['anchor'] ?? ($type === 'events' ? 'events' : ''));
+    $anchor = preg_replace('/[^a-zA-Z0-9_-]/', '', $anchor) ?? '';
+    if ($anchor !== '') $templateLinks[] = ['label' => $sectionLinks[$type], 'url' => '#' . $anchor];
+}
+if ($templateLinks !== [] && array_filter($blocks ?? [], static function ($b): bool {
+    if (!is_array($b) || block_render_type((string)($b['type'] ?? '')) !== 'hero') return false;
+    $payload = array_merge($b, is_array($b['data'] ?? null) ? $b['data'] : []);
+    return ($payload['layout'] ?? '') === 'cover';
+})) {
+    $links = $templateLinks;
 }
 ?>
 <a class="skip-link" href="#main">Zum Inhalt</a>

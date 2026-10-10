@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../../app/block_content.php';
 /** @var array $block */
 /** @var array|null $data */
 $payload = [];
@@ -33,6 +34,10 @@ if (preg_match('/<[^>]+>/', $textRaw) === 1) {
     $text = sanitize_rich_text_hrefs(strip_tags($normalized, $allowedTags));
 } else {
     $text = nl2br(htmlspecialchars($textRaw, ENT_QUOTES, 'UTF-8'));
+}
+if (block_value($payload, 'layout') === 'portrait') {
+    require __DIR__ . '/text_portrait.php';
+    return;
 }
 $rawImageUrl = trim((string)($payload['image_url'] ?? ''));
 $imageUrl = preg_match('#^(https?://|/)#i', $rawImageUrl) ? $rawImageUrl : '';
