@@ -55,12 +55,18 @@ function onepagerPages(array $entries, callable $load, array $currentPage, strin
 function onepagerNavigation(array $items, array $pages): array
 {
     $bySlug = [];
-    foreach ($pages as $page) $bySlug[trim((string)($page['slug'] ?? ''), '/')] = $page;
+    $byId = [];
+    foreach ($pages as $page) {
+        $bySlug[trim((string)($page['slug'] ?? ''), '/')] = $page;
+        if ((int)($page['id'] ?? 0) > 0) $byId[(int)$page['id']] = $page;
+    }
     foreach ($items as &$item) {
         if (!is_array($item)) continue;
         if (preg_match('#^(?:https?:)?//#i', (string)($item['url'] ?? ''))) continue;
-        $slug = trim((string)($item['slug'] ?? ''), '/');
-        if (isset($bySlug[$slug])) $item['url'] = '/#' . $bySlug[$slug]['anchor'];
+        if (str_starts_with((string)($item['url'] ?? ''), '#')) continue;
+        $slug = trim((string)($item['slug'] ?? parse_url((string)($item['url'] ?? ''), PHP_URL_PATH) ?? ''), '/');
+        $target = $byId[(int)($item['id'] ?? 0)] ?? $bySlug[$slug] ?? null;
+        if ($target !== null) $item['url'] = '/#' . $target['anchor'];
     }
     unset($item);
     return $items;

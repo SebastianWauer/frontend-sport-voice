@@ -28,6 +28,8 @@ $nav = onepagerNavigation([
     ['slug'=>'kontakt','url'=>'https://external.example/kontakt'],
 ], $pages);
 $check($nav[0]['url'] === '/#page-kontakt-3' && $nav[1]['url'] === '/datenschutz' && $nav[2]['url'] === 'https://external.example/kontakt', 'Navigation falsch umgewandelt.');
+$idNav = onepagerNavigation([['id'=>2,'url'=>'/leistungen'],['url'=>'kontakt'],['url'=>'#referenz'],['id'=>5,'url'=>'/datenschutz']], $pages);
+$check($idNav[0]['url'] === '/#page-leistungen-2' && $idNav[1]['url'] === '/#page-kontakt-3' && $idNav[2]['url'] === '#referenz' && $idNav[3]['url'] === '/datenschutz', 'CMS-Navigation ohne Slug falsch zugeordnet.');
 $ids = ['events'=>true, 'referenz'=>true];
 $blocks = onepagerPrepareBlocks([
     ['type'=>'sport_voice_events'],
