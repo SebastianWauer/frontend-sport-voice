@@ -722,6 +722,15 @@ function enrichBlockFocusWithMedia(array $blocks, CmsApiClient $client, string $
 
             $key = (string)$k;
 
+            if ($key === 'items_json') {
+                $items = json_decode($v, true);
+                if (is_array($items)) {
+                    $encoded = json_encode($enrich($items), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    if (is_string($encoded)) $value[$key] = $encoded;
+                }
+                continue;
+            }
+
             $isImageUrlLike = in_array($key, ['url', 'image_url', 'poster_url'], true)
                 || (bool)preg_match('/_image_url$/', $key);
             $isMediaIdLike = in_array($key, ['media_id', 'image_media_id', 'poster_media_id'], true)
