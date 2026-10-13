@@ -2,15 +2,6 @@
 declare(strict_types=1);
 require_once __DIR__ . '/block_content.php';
 
-function onepagerIsSeparate(array $page): bool
-{
-    $slug = strtolower(trim((string)($page['slug'] ?? ''), '/'));
-    $leaf = basename($slug);
-    $title = strtolower(trim((string)($page['title'] ?? '')));
-    return in_array($leaf, ['impressum','datenschutz','datenschutzerklaerung','imprint','privacy','privacy-policy'], true)
-        || in_array($title, ['impressum','datenschutz','datenschutzerklaerung','datenschutzerklärung'], true);
-}
-
 function onepagerAnchor(array $page): string
 {
     $slug = trim((string)($page['slug'] ?? ''), '/');
@@ -25,12 +16,15 @@ function onepagerBlockHasHeading(array $blocks): bool
     return trim(block_value($data, 'headline')) !== '' || trim(block_value($data, 'title')) !== '';
 }
 
-function onepagerPages(array $entries, callable $load, array $currentPage, string $homeSlug): array
+function onepagerPages(array $entries, callable $load, array $currentPage, string $homeSlug, array $selectedIds): array
 {
     $pages = [];
     $seen = [];
-    foreach ($entries as $entry) {
-        if (!is_array($entry) || onepagerIsSeparate($entry)) continue;
+    $byId = [];
+    foreach ($entries as $entry) if (is_array($entry)) $byId[(int)($entry['id'] ?? 0)] = $entry;
+    foreach ($selectedIds as $pageId) {
+        if (!is_int($pageId) || !isset($byId[$pageId])) continue;
+        $entry = $byId[$pageId];
         if (isset($entry['status']) && $entry['status'] !== 'live') continue;
         $slug = trim((string)($entry['slug'] ?? ''), '/');
         $isHome = ($entry['url'] ?? '') === '/' || !empty($entry['is_home']);
@@ -40,15 +34,13 @@ function onepagerPages(array $entries, callable $load, array $currentPage, strin
         $seen[$key] = true;
         $samePage = (int)($entry['id'] ?? 0) > 0 && (int)$entry['id'] === (int)($currentPage['id'] ?? 0);
         $page = $samePage ? $currentPage : $load($slug !== '' ? $slug : $homeSlug);
-        if (onepagerIsSeparate($page) || ($page['redirect_type'] ?? 'none') !== 'none') continue;
+        if (($page['redirect_type'] ?? 'none') !== 'none') continue;
         $page['is_home'] = $isHome;
         $page['anchor'] = onepagerAnchor($entry);
         $page['form_slug'] = $slug !== '' ? $slug : $homeSlug;
         $page['nav_title'] = (string)($entry['title'] ?? $page['title'] ?? '');
         $pages[] = $page;
     }
-    // Die CMS-Reihenfolge bleibt erhalten; nur die Startseite steht immer zuerst.
-    usort($pages, static fn(array $a, array $b): int => (int)$b['is_home'] <=> (int)$a['is_home']);
     return $pages;
 }
 

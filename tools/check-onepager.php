@@ -19,10 +19,13 @@ $pages = onepagerPages($entries, static function ($slug) use (&$called, $entries
     $called[] = $slug;
     foreach ($entries as $entry) if ($entry['slug'] === $slug) return $entry + ['blocks'=>[], 'redirect_type'=>$slug === 'weiterleitung' ? 'url' : 'none'];
     throw new RuntimeException('Unbekannte Seite');
-}, $entries[0] + ['blocks'=>[]], 'start');
+}, $entries[0] + ['blocks'=>[]], 'start', [1,2,3,7]);
 $check(array_column($pages, 'id') === [1,2,3], 'Reihenfolge, unsichtbare Seite oder Ausschluesse falsch.');
 $check(!in_array('leistungen', $called, true), 'Aktuelle Seite unnoetig doppelt geladen.');
 $check(!in_array('impressum', $called, true) && !in_array('entwurf', $called, true), 'Rechtsseiten/Entwurf geladen.');
+$selected = onepagerPages($entries, static fn(string $slug): array => ['id'=>$slug === 'kontakt' ? 3 : 4,'slug'=>$slug,'blocks'=>[]], [], 'start', [3,4]);
+$check(array_column($selected, 'id') === [3,4], 'Explizite Reihenfolge oder ausgewaehlte Rechtsseite wurde ueberschrieben.');
+$check(onepagerPages($entries, static fn($slug) => [], [], 'start', []) === [], 'Leere Auswahl darf nicht alle Seiten anzeigen.');
 $nav = onepagerNavigation([
     ['slug'=>'kontakt','url'=>'/kontakt'], ['slug'=>'datenschutz','url'=>'/datenschutz'],
     ['slug'=>'kontakt','url'=>'https://external.example/kontakt'],
@@ -44,4 +47,4 @@ $forms = onepagerPrepareBlocks([
     ['type'=>'contact_form'],
 ], 'page-kontakt-3', $ids, 2);
 $check($forms[0]['form_id'] !== 'anfrage' && strlen($forms[1]['form_id']) <= 64 && $forms[2]['form_id'] !== 'contact-5', 'Formular-IDs kollidieren nach Normalisierung.');
-echo "PASS: Startseite zuerst; CMS-Reihenfolge; unsichtbare Inhaltsseiten; Rechtsseiten/Entwuerfe/Redirects ausgeschlossen; Sprunglinks; kollisionsfreie Event- und Referenzanker.\n";
+echo "PASS: konfigurierte Seitenauswahl/Reihenfolge; separate ausgeschlossene Seiten; explizit waehlbare Rechtsseiten; leere Auswahl; Sprunglinks; kollisionsfreie Formular-, Event- und Referenzanker.\n";

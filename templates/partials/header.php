@@ -39,7 +39,7 @@ foreach (is_array($blocks ?? null) ? $blocks : [] as $pageBlock) {
     $anchor = preg_replace('/[^a-zA-Z0-9_-]/', '', $anchor) ?? '';
     if ($anchor !== '') $templateLinks[] = ['label' => $sectionLinks[$type], 'url' => '#' . $anchor];
 }
-if (empty($onePageMode) && $templateLinks !== [] && array_filter($blocks ?? [], static function ($b): bool {
+if (!in_array($websiteMode ?? '', ['onepager', 'multipage'], true) && $templateLinks !== [] && array_filter($blocks ?? [], static function ($b): bool {
     if (!is_array($b) || block_render_type((string)($b['type'] ?? '')) !== 'hero') return false;
     $payload = array_merge($b, is_array($b['data'] ?? null) ? $b['data'] : []);
     return ($payload['layout'] ?? '') === 'cover';

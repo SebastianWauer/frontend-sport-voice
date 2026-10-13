@@ -51,21 +51,30 @@ mit seinen Sicherheitspruefungen. Die Seitenvorlage verwendet wie die
 HTML-Vorlage `delivery=mailto`: ein Entwurf in der E-Mail-App.
 Der Empfaenger und die abgefragten Felder sind einstellbar.
 
-## Onepager
+## Website-Modus und Onepager
 
-Im oeffentlichen Frontend erscheinen alle veroeffentlichten Inhaltsseiten
-untereinander: zuerst die Startseite, dann die CMS-Seitenreihenfolge.
-Auch Seiten ohne Navigationseintrag werden als Inhalt aufgenommen.
-Impressum und Datenschutz bleiben eigenstaendige Seiten. Entwuerfe,
-geloeschte Seiten und Weiterleitungsseiten werden nicht zusammengesetzt.
+In der Verwaltung unter **Kunde > Website-Darstellung** zwischen
+**Mehrseitige Website** und **Onepager** waehlen. Der Modus wird beim
+Kunden-CMS-Rollout uebernommen. Blockfreigaben bleiben davon unabhaengig.
 
-Die CMS-Navigation springt zu den jeweiligen Seitenabschnitten. Bisherige
-Inhaltsseiten-URLs leiten bei GET zum passenden Abschnitt auf der Startseite
-weiter. Kontaktformulare senden weiterhin an ihre eigene Ursprungsseite;
-deren Signaturen und Formularmeldungen bleiben voneinander getrennt.
+Bei aktiviertem Modus unter **CMS > Seiten > Onepager** die sichtbaren Seiten
+auswaehlen und per Drag-and-drop oder Pfeiltasten sortieren.
+Die Startseite ist fest zuerst. Die erstmalige Vorbelegung setzt Kontakt
+nach unten und schliesst Impressum und Datenschutz aus.
+Nach dem Speichern gelten ausschliesslich die ausdruecklichen Einstellungen.
+Neue Seiten werden nicht automatisch hinzugefuegt; Entwuerfe und
+Weiterleitungen werden nicht in den Onepager aufgenommen.
 
-Die Umsetzung liegt ausschliesslich im Sport-Voice-Frontend, nicht im CMS.
-Eine Seite muss nicht in einen grossen Pagebuilder-Block kopiert werden.
+Ausgeschlossene veroeffentlichte Seiten bleiben separat erreichbar.
+Die Menueinstellungen bleiben unabhaengig. Seitenwahl und Reihenfolge
+wirken sofort im Frontend, ohne erneuten Frontend-Rollout.
+Das Frontend liest `website_mode` und `onepager_page_ids` aus der CMS-API.
+Bei mehrseitiger Darstellung wird nur die aufgerufene Seite gerendert.
+
+Die Navigation springt fuer ausgewaehlte Seiten zu den Abschnitten; deren
+bisherige Seiten-URLs leiten bei GET dorthin weiter. Kontaktformulare
+behalten ihre Ursprungsseite und getrennte Formularmeldungen.
+
 Lokaler Regressionstest: `php tools/check-onepager.php`.
 
 ## Vorlagenvorschau

@@ -101,7 +101,7 @@
         return (string)($item['area'] ?? '') === 'footer';
     }));
     if (!$previewMainOnly) {
-        render('templates/partials/header.php', compact('siteName', 'headerNavItems', 'slug', 'headerLogoUrl', 'faviconUrl', 'assetBaseUrl', 'blocks', 'onePageMode', 'contactAnchorUrl'));
+        render('templates/partials/header.php', array_merge(compact('siteName', 'headerNavItems', 'slug', 'headerLogoUrl', 'faviconUrl', 'assetBaseUrl', 'blocks', 'onePageMode', 'contactAnchorUrl'), ['websiteMode' => $websiteMode ?? null]));
     }
     ?>
     

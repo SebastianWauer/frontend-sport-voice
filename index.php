@@ -1122,12 +1122,16 @@ try {
 // -------------------------------------------------------
 require_once __DIR__ . '/app/onepager.php';
 $onePageSections = [];
-$onePageMode = !onepagerIsSeparate($page) && ($page['redirect_type'] ?? 'none') === 'none';
+$websiteMode = ($settings['website_mode'] ?? 'multipage') === 'onepager' ? 'onepager' : 'multipage';
+$selectedPageIds = $websiteMode === 'onepager' && is_array($settings['onepager_page_ids'] ?? null)
+    ? array_values(array_unique(array_filter($settings['onepager_page_ids'], static fn($id): bool => is_int($id) && $id > 0)))
+    : [];
+$onePageMode = $websiteMode === 'onepager' && in_array((int)($page['id'] ?? 0), $selectedPageIds, true) && ($page['redirect_type'] ?? 'none') === 'none';
 try {
     $pageResult = $client->getPages(1);
     $pageEntries = array_is_list($pageResult) ? $pageResult : ($pageResult['items'] ?? []);
     if ($onePageMode) {
-        $onePageSections = onepagerPages($pageEntries, static fn(string $pageSlug): array => $client->getPage($pageSlug), $page, $homeSlug);
+        $onePageSections = onepagerPages($pageEntries, static fn(string $pageSlug): array => $client->getPage($pageSlug), $page, $homeSlug, $selectedPageIds);
         foreach ($onePageSections as $section) {
             if ((int)($section['id'] ?? 0) === (int)($page['id'] ?? 0) && $uri !== '/' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
                 header('Location: /#' . $section['anchor'], true, 302);
@@ -1138,18 +1142,19 @@ try {
     $navPages = array_map(static function (array $entry): array {
         $entry['anchor'] = onepagerAnchor($entry);
         return $entry;
-    }, array_values(array_filter($pageEntries, static fn($entry): bool => is_array($entry) && !onepagerIsSeparate($entry))));
+    }, array_values(array_filter($pageEntries, static fn($entry): bool => is_array($entry) && in_array((int)($entry['id'] ?? 0), $selectedPageIds, true))));
     $navItems = onepagerNavigation($navItems, $onePageMode ? $onePageSections : $navPages);
 } catch (CmsApiException $e) {
     frontendDebugLog('[FRONTEND] onepager fetch failed slug=' . $slug . ' status=' . $e->statusCode);
     if ($onePageMode) render500($siteName);
 }
-$contactAnchorUrl = '/#kontakt';
-foreach ($navItems as $item) {
-    if (is_array($item) && basename(trim((string)($item['slug'] ?? ''), '/')) === 'kontakt') $contactAnchorUrl = (string)$item['url'];
-}
-foreach ($navPages ?? [] as $navPage) {
-    if (basename(trim((string)($navPage['slug'] ?? ''), '/')) === 'kontakt') $contactAnchorUrl = '/#' . $navPage['anchor'];
+$contactAnchorUrl = '/kontakt';
+foreach ($pageEntries ?? [] as $entry) {
+    if (!is_array($entry)) continue;
+    if (basename(trim((string)($entry['slug'] ?? ''), '/')) === 'kontakt' || mb_strtolower(trim((string)($entry['title'] ?? ''))) === 'kontakt') {
+        $contactAnchorUrl = in_array((int)($entry['id'] ?? 0), $selectedPageIds, true)
+            ? '/#' . onepagerAnchor($entry) : '/' . trim((string)$entry['slug'], '/');
+    }
 }
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -1206,7 +1211,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 
 try {
-    render('templates/layout.php', compact('siteName', 'title', 'pageTitle', 'pageSubtitle', 'blocks', 'navItems', 'slug', 'seo', 'faviconUrl', 'headerLogoUrl', 'contactFormStates', 'contactTurnstileSiteKey', 'publicSettings', 'client', 'onePageSections', 'onePageMode', 'contactAnchorUrl'));
+    render('templates/layout.php', compact('siteName', 'title', 'pageTitle', 'pageSubtitle', 'blocks', 'navItems', 'slug', 'seo', 'faviconUrl', 'headerLogoUrl', 'contactFormStates', 'contactTurnstileSiteKey', 'publicSettings', 'client', 'onePageSections', 'onePageMode', 'contactAnchorUrl', 'websiteMode'));
 } catch (Throwable) {
     render500($siteName);
 }
