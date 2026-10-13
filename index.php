@@ -1111,6 +1111,37 @@ try {
 // -------------------------------------------------------
 // Render HTML
 // -------------------------------------------------------
+require_once __DIR__ . '/app/onepager.php';
+$onePageSections = [];
+$onePageMode = !onepagerIsSeparate($page) && ($page['redirect_type'] ?? 'none') === 'none';
+try {
+    $pageResult = $client->getPages(1);
+    $pageEntries = array_is_list($pageResult) ? $pageResult : ($pageResult['items'] ?? []);
+    if ($onePageMode) {
+        $onePageSections = onepagerPages($pageEntries, static fn(string $pageSlug): array => $client->getPage($pageSlug), $page, $homeSlug);
+        foreach ($onePageSections as $section) {
+            if ((int)($section['id'] ?? 0) === (int)($page['id'] ?? 0) && $uri !== '/' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+                header('Location: /#' . $section['anchor'], true, 302);
+                exit;
+            }
+        }
+    }
+    $navPages = array_map(static function (array $entry): array {
+        $entry['anchor'] = onepagerAnchor($entry);
+        return $entry;
+    }, array_values(array_filter($pageEntries, static fn($entry): bool => is_array($entry) && !onepagerIsSeparate($entry))));
+    $navItems = onepagerNavigation($navItems, $onePageMode ? $onePageSections : $navPages);
+} catch (CmsApiException $e) {
+    frontendDebugLog('[FRONTEND] onepager fetch failed slug=' . $slug . ' status=' . $e->statusCode);
+    if ($onePageMode) render500($siteName);
+}
+$contactAnchorUrl = '/#kontakt';
+foreach ($navItems as $item) {
+    if (is_array($item) && basename(trim((string)($item['slug'] ?? ''), '/')) === 'kontakt') $contactAnchorUrl = (string)$item['url'];
+}
+foreach ($navPages ?? [] as $navPage) {
+    if (basename(trim((string)($navPage['slug'] ?? ''), '/')) === 'kontakt') $contactAnchorUrl = '/#' . $navPage['anchor'];
+}
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
@@ -1127,10 +1158,29 @@ if ($internalTitle === '') {
 $title = $internalTitle . ' - ' . $siteName;
 $blocks = is_array($page['blocks'] ?? null) ? $page['blocks'] : [];
 $cmsBaseUrl = deriveCmsBaseUrlFromApiBase($baseUrl);
-$blocks = enrichBlockFocusWithMedia($blocks, $client, $cmsBaseUrl);
-$blocks = enrichEventBlocksWithItems($blocks, $client, $cmsBaseUrl);
-$blocks = enrichNewsBlocksWithItems($blocks, $client, $cmsBaseUrl);
+if ($onePageSections === []) {
+    $blocks = enrichBlockFocusWithMedia($blocks, $client, $cmsBaseUrl);
+    $blocks = enrichEventBlocksWithItems($blocks, $client, $cmsBaseUrl);
+    $blocks = enrichNewsBlocksWithItems($blocks, $client, $cmsBaseUrl);
+}
+if ($onePageSections !== []) {
+    $usedIds = array_fill_keys(array_merge(['main', 'photo-dialog', 'photo-caption', 'dialog-image', 'mobile-nav', 'year'], array_column($onePageSections, 'anchor')), true);
+    $blocks = [];
+    foreach ($onePageSections as &$section) {
+        $sectionBlocks = is_array($section['blocks'] ?? null) ? $section['blocks'] : [];
+        $sectionBlocks = enrichBlockFocusWithMedia($sectionBlocks, $client, $cmsBaseUrl);
+        $sectionBlocks = enrichEventBlocksWithItems($sectionBlocks, $client, $cmsBaseUrl);
+        $sectionBlocks = enrichNewsBlocksWithItems($sectionBlocks, $client, $cmsBaseUrl);
+        $section['blocks'] = onepagerPrepareBlocks($sectionBlocks, $section['anchor'], $usedIds, count($blocks));
+        array_push($blocks, ...$section['blocks']);
+    }
+    unset($section);
+    $homePage = $onePageSections[0];
+    $pageTitle = trim((string)($homePage['frontend_title'] ?? '')) ?: (string)($homePage['title'] ?? $pageTitle);
+    $title = (string)($homePage['title'] ?? $pageTitle) . ' - ' . $siteName;
+}
 $seo = is_array($page['seo'] ?? null) ? $page['seo'] : [];
+if ($onePageSections !== []) $seo = is_array($homePage['seo'] ?? null) ? $homePage['seo'] : [];
 $contactFormStates = [];
 $contactTurnstileSiteKey = contactTurnstileSiteKey();
 $publicSettings = is_array($settings ?? null) ? $settings : [];
@@ -1147,7 +1197,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 
 try {
-    render('templates/layout.php', compact('siteName', 'title', 'pageTitle', 'pageSubtitle', 'blocks', 'navItems', 'slug', 'seo', 'faviconUrl', 'headerLogoUrl', 'contactFormStates', 'contactTurnstileSiteKey', 'publicSettings', 'client'));
+    render('templates/layout.php', compact('siteName', 'title', 'pageTitle', 'pageSubtitle', 'blocks', 'navItems', 'slug', 'seo', 'faviconUrl', 'headerLogoUrl', 'contactFormStates', 'contactTurnstileSiteKey', 'publicSettings', 'client', 'onePageSections', 'onePageMode', 'contactAnchorUrl'));
 } catch (Throwable) {
     render500($siteName);
 }

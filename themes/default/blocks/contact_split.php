@@ -27,6 +27,7 @@ $delivery = block_value($p, 'delivery', 'server');
         render('themes/default/blocks/contact_form.php', [
             'block' => $serverData, 'data' => $serverData,
             'contactFormStates' => $contactFormStates ?? [], 'currentSlug' => $currentSlug ?? '',
+            'contactFormAction' => $contactFormAction ?? '',
             'contactTurnstileSiteKey' => $contactTurnstileSiteKey ?? '',
         ]);
     else: ?>

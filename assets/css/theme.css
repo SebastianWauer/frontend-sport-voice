@@ -299,7 +299,7 @@ nav a[aria-current="page"] .site-nav__active-icon-wrap {
   margin-inline: auto;
 }
 
-.block-hero h1 {
+.block-hero :is(h1,h2) {
   font-size: clamp(2rem, 5vw, 3.75rem);
   font-weight: 700;
   line-height: 1.1;

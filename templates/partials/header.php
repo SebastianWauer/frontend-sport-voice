@@ -39,7 +39,7 @@ foreach (is_array($blocks ?? null) ? $blocks : [] as $pageBlock) {
     $anchor = preg_replace('/[^a-zA-Z0-9_-]/', '', $anchor) ?? '';
     if ($anchor !== '') $templateLinks[] = ['label' => $sectionLinks[$type], 'url' => '#' . $anchor];
 }
-if ($templateLinks !== [] && array_filter($blocks ?? [], static function ($b): bool {
+if (empty($onePageMode) && $templateLinks !== [] && array_filter($blocks ?? [], static function ($b): bool {
     if (!is_array($b) || block_render_type((string)($b['type'] ?? '')) !== 'hero') return false;
     $payload = array_merge($b, is_array($b['data'] ?? null) ? $b['data'] : []);
     return ($payload['layout'] ?? '') === 'cover';
@@ -60,13 +60,13 @@ if ($templateLinks !== [] && array_filter($blocks ?? [], static function ($b): b
         <?php endforeach; ?>
       </nav>
     <?php endif; ?>
-    <a class="header-cta" href="#kontakt">Projekt anfragen <span aria-hidden="true">↗</span></a>
+    <a class="header-cta" href="<?= e($contactAnchorUrl ?? '#kontakt') ?>">Projekt anfragen <span aria-hidden="true">↗</span></a>
     <button class="menu-toggle" aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span></button>
   </div>
   <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile Navigation" hidden>
     <?php foreach ($links as $link): ?>
       <a href="<?= e($link['url']) ?>"><?= e($link['label']) ?> <span aria-hidden="true">↗</span></a>
     <?php endforeach; ?>
-    <a href="#kontakt">Projekt anfragen <span aria-hidden="true">↗</span></a>
+    <a href="<?= e($contactAnchorUrl ?? '#kontakt') ?>">Projekt anfragen <span aria-hidden="true">↗</span></a>
   </nav>
 </header>

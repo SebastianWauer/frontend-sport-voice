@@ -51,7 +51,24 @@ mit seinen Sicherheitspruefungen. Die Seitenvorlage verwendet wie die
 HTML-Vorlage `delivery=mailto`: ein Entwurf in der E-Mail-App.
 Der Empfaenger und die abgefragten Felder sind einstellbar.
 
-## Lokale Vorschau
+## Onepager
+
+Im oeffentlichen Frontend erscheinen alle veroeffentlichten Inhaltsseiten
+untereinander: zuerst die Startseite, dann die CMS-Seitenreihenfolge.
+Auch Seiten ohne Navigationseintrag werden als Inhalt aufgenommen.
+Impressum und Datenschutz bleiben eigenstaendige Seiten. Entwuerfe,
+geloeschte Seiten und Weiterleitungsseiten werden nicht zusammengesetzt.
+
+Die CMS-Navigation springt zu den jeweiligen Seitenabschnitten. Bisherige
+Inhaltsseiten-URLs leiten bei GET zum passenden Abschnitt auf der Startseite
+weiter. Kontaktformulare senden weiterhin an ihre eigene Ursprungsseite;
+deren Signaturen und Formularmeldungen bleiben voneinander getrennt.
+
+Die Umsetzung liegt ausschliesslich im Sport-Voice-Frontend, nicht im CMS.
+Eine Seite muss nicht in einen grossen Pagebuilder-Block kopiert werden.
+Lokaler Regressionstest: `php tools/check-onepager.php`.
+
+## Vorlagenvorschau
 
 Ohne CMS-Zugang, mit Vorlageninhalten und leerem Events-Block:
 

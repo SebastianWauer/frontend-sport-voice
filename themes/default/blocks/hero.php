@@ -53,7 +53,7 @@ $bgStyle = ' style="' . implode(';', $styleParts) . '"';
 ?>
 <section class="block block-hero"<?= $bgStyle ?>>
   <?php if (!empty($hero['headline'])): ?>
-    <h1><?= $e((string)$hero['headline']) ?></h1>
+    <<?= (int)($headingLevel ?? 1) === 2 ? 'h2' : 'h1' ?>><?= $e((string)$hero['headline']) ?></<?= (int)($headingLevel ?? 1) === 2 ? 'h2' : 'h1' ?>>
   <?php endif; ?>
   <?php if (!empty($hero['subtitle'])): ?>
     <p><?= $e((string)$hero['subtitle']) ?></p>

@@ -91,7 +91,7 @@ if ($headline === '' && $intro === '' && $events === []) {
     return;
 }
 ?>
-<section class="block block-events season section" id="events">
+<section class="block block-events season section" id="<?= htmlspecialchars(preg_replace('/[^a-zA-Z0-9_-]/', '', (string)($data['anchor'] ?? $block['anchor'] ?? 'events')), ENT_QUOTES, 'UTF-8') ?>">
   <div class="shell">
     <div class="section-heading">
       <div>

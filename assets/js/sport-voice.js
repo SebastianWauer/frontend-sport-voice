@@ -137,5 +137,6 @@ if ('IntersectionObserver' in window) {
       });
     });
   }, {rootMargin: '-15% 0px -65% 0px', threshold: 0});
-  document.querySelectorAll('main section[id]').forEach(section => observer.observe(section));
+  const pageSections = document.querySelectorAll('main .onepager-section[id]');
+  (pageSections.length ? pageSections : document.querySelectorAll('main section[id]')).forEach(section => observer.observe(section));
 }

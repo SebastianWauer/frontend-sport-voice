@@ -4,7 +4,7 @@ $p = block_content($block ?? [], $data ?? null);
 $isList = block_value($p, 'layout', 'showcase') === 'list';
 $count = max(1, min(6, (int)block_value($p, 'item_count', '3')));
 $anchor = block_anchor(block_value($p, 'anchor'));
-$headingTag = $isList ? 'h2' : 'h1';
+$headingTag = $isList || (int)($headingLevel ?? 1) === 2 ? 'h2' : 'h1';
 $icons = [
     'microphone' => '<svg class="service-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="11" y="3" width="10" height="17" rx="5"/><path d="M6 15v2a10 10 0 0 0 20 0v-2M16 27v4M10 31h12"/></svg>',
     'video' => '<svg class="service-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="3" y="7" width="18" height="18" rx="2"/><path d="m21 13 8-5v16l-8-5M9 12v8l7-4z"/></svg>',

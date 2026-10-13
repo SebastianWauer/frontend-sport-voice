@@ -60,6 +60,7 @@ $turnstileSiteKey = trim((string)($contactTurnstileSiteKey ?? ''));
 
 $requestPath = parse_url((string)($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
 $formAction = is_string($requestPath) && $requestPath !== '' ? $requestPath : '/';
+if (!empty($contactFormAction)) $formAction = $contactFormAction . '#' . $formId;
 
 $tokenTs = time();
 $tokenSig = '';

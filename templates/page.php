@@ -9,6 +9,9 @@ $publicSettings = is_array($publicSettings ?? null) ? $publicSettings : [];
 $client = $client ?? null; // nicht jeder Render-Pfad reicht ihn durch (z.B. Fehlerseiten)
 
 $currentSlug = trim((string)($slug ?? ''), '/');
+$headingLevel = (int)($headingLevel ?? 1) === 2 ? 2 : 1;
+$renderOffset = max(0, (int)($renderOffset ?? 0));
+$contactFormAction = (string)($contactFormAction ?? '');
 $assetBaseUrl = isset($assetBaseUrl) && is_string($assetBaseUrl) ? $assetBaseUrl : '';
 
 if (!function_exists('render_page_blocks')) {
@@ -22,7 +25,7 @@ if (!function_exists('render_page_blocks')) {
             if (!is_array($block)) {
                 continue;
             }
-            $block['_render_index'] = (int)$blockIndex;
+            $block['_render_index'] = (int)$blockIndex + (int)($context['renderOffset'] ?? 0);
             $type = block_render_type((string)($block['type'] ?? ''));
             $data = $block['data'] ?? [];
             if (!is_array($data)) {
@@ -76,10 +79,10 @@ foreach ($blocksList as $candidateBlock) {
 }
 ?>
 <?php
-if (!$hasHero):
+if (!$hasHero && ($showPageHeading ?? true)):
 ?>
 <section class="page-headline-wrap">
-    <h1 class="page-title"><?php echo e($pageTitle); ?></h1>
+    <<?= $headingLevel === 1 ? 'h1' : 'h2' ?> class="page-title"><?php echo e($pageTitle); ?></<?= $headingLevel === 1 ? 'h1' : 'h2' ?>>
     <?php if ($pageSubtitle !== ''): ?>
     <p class="page-subtitle"><?php echo e($pageSubtitle); ?></p>
     <?php endif; ?>
@@ -87,5 +90,5 @@ if (!$hasHero):
 <?php
 endif;
 
-render_page_blocks($blocksList, compact('contactFormStates', 'currentSlug', 'contactTurnstileSiteKey', 'publicSettings', 'client', 'assetBaseUrl'));
+render_page_blocks($blocksList, compact('contactFormStates', 'currentSlug', 'contactTurnstileSiteKey', 'publicSettings', 'client', 'assetBaseUrl', 'headingLevel', 'renderOffset', 'contactFormAction'));
 ?>

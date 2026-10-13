@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../app/block_content.php'; ?>
+<?php require_once __DIR__ . '/../app/onepager.php'; ?>
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -14,6 +15,8 @@
     $faviconUrl = (isset($faviconUrl) && is_string($faviconUrl)) ? trim($faviconUrl) : '';
     $headerLogoUrl = (isset($headerLogoUrl) && is_string($headerLogoUrl)) ? trim($headerLogoUrl) : '';
     $previewMainOnly = !empty($previewMainOnly);
+    $onePageMode = !empty($onePageMode);
+    $contactAnchorUrl = (string)($contactAnchorUrl ?? '#kontakt');
     $usesEditorialBlocks = false;
     $needsLegacyStyles = false;
     foreach (is_array($blocks ?? null) ? $blocks : [] as $candidate) {
@@ -98,12 +101,33 @@
         return (string)($item['area'] ?? '') === 'footer';
     }));
     if (!$previewMainOnly) {
-        render('templates/partials/header.php', compact('siteName', 'headerNavItems', 'slug', 'headerLogoUrl', 'faviconUrl', 'assetBaseUrl', 'blocks'));
+        render('templates/partials/header.php', compact('siteName', 'headerNavItems', 'slug', 'headerLogoUrl', 'faviconUrl', 'assetBaseUrl', 'blocks', 'onePageMode', 'contactAnchorUrl'));
     }
     ?>
     
     <main id="main">
-        <?php render('templates/page.php', compact('pageTitle', 'pageSubtitle', 'blocks', 'contactFormStates', 'slug', 'contactTurnstileSiteKey', 'publicSettings', 'client', 'assetBaseUrl')); ?>
+        <?php
+        $sections = is_array($onePageSections ?? null) ? $onePageSections : [];
+        if ($sections === []) {
+            render('templates/page.php', compact('pageTitle', 'pageSubtitle', 'blocks', 'contactFormStates', 'slug', 'contactTurnstileSiteKey', 'publicSettings', 'client', 'assetBaseUrl'));
+        } else {
+            $offset = 0;
+            foreach ($sections as $index => $section) {
+                echo '<div class="onepager-section" id="' . e($section['anchor']) . '">';
+                $sectionSlug = (string)$section['form_slug'];
+                render('templates/page.php', array_merge(compact('contactTurnstileSiteKey', 'publicSettings', 'client', 'assetBaseUrl'), [
+                    'pageTitle' => trim((string)($section['frontend_title'] ?? '')) ?: (string)($section['title'] ?? ''),
+                    'pageSubtitle' => (string)($section['subtitle'] ?? ''), 'blocks' => $section['blocks'],
+                    'slug' => $sectionSlug, 'headingLevel' => $index === 0 ? 1 : 2, 'renderOffset' => $offset,
+                    'showPageHeading' => $index === 0 || !onepagerBlockHasHeading($section['blocks']),
+                    'contactFormAction' => !empty($section['is_home']) ? '/' : '/' . $sectionSlug,
+                    'contactFormStates' => trim((string)($slug ?? ''), '/') === $sectionSlug ? $contactFormStates : [],
+                ]));
+                $offset += count($section['blocks']);
+                echo '</div>';
+            }
+        }
+        ?>
     </main>
     
     <?php if (!$previewMainOnly) { render('templates/partials/footer.php', compact('siteName', 'footerNavItems', 'assetBaseUrl')); } ?>
